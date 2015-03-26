@@ -11,12 +11,8 @@ To Install:
 
 `wget https://github.com/coreos/etcd/releases/download/v2.0.5/etcd-v2.0.5-linux-amd64.tar.gz -O ~/rpmbuild/SOURCES/etcd-v2.0.5-linux-amd64.tar.gz`
 
-`wget https://raw.github.com/nmilford/rpm-etcd/master/etcd.initd -O ~/rpmbuild/SOURCES/etcd.initd`
+`wget https://raw.github.com/nmilford/rpm-etcd/master/etcd.service -O ~/rpmbuild/SOURCES/etcd.service`
 
 `wget https://raw.github.com/nmilford/rpm-etcd/master/etcd.sysconfig -O ~/rpmbuild/SOURCES/etcd.sysconfig`
-
-`wget https://raw.github.com/nmilford/rpm-etcd/master/etcd.nofiles.conf -O ~/rpmbuild/SOURCES/etcd.nofiles.conf`
-
-`wget https://raw.github.com/nmilford/rpm-etcd/master/etcd.logrotate -O ~/rpmbuild/SOURCES/etcd.logrotate`
 
 `rpmbuild -bb ~/rpmbuild/SPECS/etcd.spec`

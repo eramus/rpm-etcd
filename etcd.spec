@@ -19,8 +19,6 @@
 # wget https://github.com/coreos/etcd/releases/download/v2.0.5/etcd-v2.0.5-linux-amd64.tar.gz -O ~/rpmbuild/SOURCES/etcd-v2.0.5-linux-amd64.tar.gz
 # wget https://raw.github.com/nmilford/rpm-etcd/master/etcd.initd -O ~/rpmbuild/SOURCES/etcd.initd
 # wget https://raw.github.com/nmilford/rpm-etcd/master/etcd.sysconfig -O ~/rpmbuild/SOURCES/etcd.sysconfig
-# wget https://raw.github.com/nmilford/rpm-etcd/master/etcd.nofiles.conf -O ~/rpmbuild/SOURCES/etcd.nofiles.conf
-# wget https://raw.github.com/nmilford/rpm-etcd/master/etcd.logrotate -O ~/rpmbuild/SOURCES/etcd.logrotate
 # rpmbuild -bb ~/rpmbuild/SPECS/etcd.spec
 
 %define debug_package %{nil}
@@ -36,16 +34,14 @@ License:   Apache 2.0
 URL:       https://github.com/coreos/etcd
 Group:     System Environment/Daemons
 Source0:   https://github.com/coreos/%{name}/releases/download/v%{version}/%{name}-v%{version}-linux-amd64.tar.gz
-Source1:   %{name}.initd
+Source1:   %{name}.service
 Source2:   %{name}.sysconfig
-Source3:   %{name}.nofiles.conf
-Source4:   %{name}.logrotate
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
 Packager:  Nathan Milford <nathan@milford.io>
 Requires(pre): shadow-utils
-Requires(post): /sbin/chkconfig
-Requires(preun): /sbin/chkconfig, /sbin/service
-Requires(postun): /sbin/service
+Requires(post): /bin/systemctl
+Requires(preun): /bin/systemctl
+Requires(postun): /bin/systemctl
 
 %description
 A highly-available key value store for shared configuration and service
@@ -68,28 +64,21 @@ rm -rf %{buildroot}
 echo  %{buildroot}
 
 %install
-install -d -m 755 %{buildroot}/%{_sbindir}
-install    -m 755 %{_builddir}/%{name}-v%{version}-linux-amd64/etcd    %{buildroot}/%{_sbindir}
-install    -m 755 %{_builddir}/%{name}-v%{version}-linux-amd64/etcdctl %{buildroot}/%{_sbindir}
+install -d -m 755 %{buildroot}/%{_bindir}
+install    -m 755 %{_builddir}/%{name}-v%{version}-linux-amd64/etcd    %{buildroot}/%{_bindir}
+install    -m 755 %{_builddir}/%{name}-v%{version}-linux-amd64/etcdctl %{buildroot}/%{_bindir}
 
 install -d -m 755 %{buildroot}/usr/share/doc/%{name}-v%{version}
 install    -m 644 %{_builddir}/%{name}-v%{version}-linux-amd64/README.md    %{buildroot}/%{_defaultdocdir}/%{name}-v%{version}
 install    -m 644 %{_builddir}/%{name}-v%{version}-linux-amd64/README-etcdctl.md %{buildroot}/%{_defaultdocdir}/%{name}-v%{version}
 
-install -d -m 755 %{buildroot}/%{_localstatedir}/log/%{name}
 install -d -m 755 %{buildroot}/%{_localstatedir}/lib/%{name}
 
-install -d -m 755 %{buildroot}/%{_initrddir}
-install    -m 755 %_sourcedir/%{name}.initd        %{buildroot}/%{_initrddir}/%{name}
+install -d -m 755 %{buildroot}/%{_sysconfdir}/systemd/system
+install    -m 644 %_sourcedir/%{name}.service    %{buildroot}/%{_sysconfdir}/systemd/system/%{name}.service
 
 install -d -m 755 %{buildroot}/%{_sysconfdir}/sysconfig/
 install    -m 644 %_sourcedir/%{name}.sysconfig    %{buildroot}/%{_sysconfdir}/sysconfig/%{name}
-
-install -d -m 755 %{buildroot}/%{_sysconfdir}/logrotate.d
-install    -m 644 %_sourcedir/%{name}.logrotate    %{buildroot}/%{_sysconfdir}/logrotate.d/%{name}
-
-install -d -m 755 %{buildroot}/%{_sysconfdir}/security/limits.d/
-install    -m 644 %_sourcedir/%{name}.nofiles.conf %{buildroot}/%{_sysconfdir}/security/limits.d/%{name}.nofiles.conf
 
 %clean
 rm -rf %{buildroot}
@@ -99,27 +88,24 @@ getent group %{etcd_group} >/dev/null || groupadd -r %{etcd_group}
 getent passwd %{etcd_user} >/dev/null || /usr/sbin/useradd --comment "etcd Daemon User" --shell /bin/bash -M -r -g %{etcd_group} --home %{etcd_data} %{etcd_user}
 
 %post
-chkconfig --add %{name}
+systemctl enable %{name} > /dev/null 2>&1
 
 %preun
 if [ $1 = 0 ]; then
-  service %{name} stop > /dev/null 2>&1
-  chkconfig --del %{name}
+  systemctl stop %{name} > /dev/null 2>&1
+  systemctl disable %{name} > /dev/null 2>&1
 fi
 
 %files
 %defattr(-,root,root)
-%{_sbindir}/etc*
+%{_bindir}/etc*
 %{_defaultdocdir}/%{name}-v%{version}/*.md
-%attr(0755,%{etcd_user},%{etcd_group}) %dir %{_localstatedir}/log/%{name}
 %attr(0755,%{etcd_user},%{etcd_group}) %dir %{_localstatedir}/lib/%{name}
-%{_initrddir}/etcd
-%{_sysconfdir}/logrotate.d/%{name}
-%{_sysconfdir}/security/limits.d/etcd.nofiles.conf
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
+%config(noreplace) %{_sysconfdir}/systemd/system/%{name}.service
 
 %changelog
-* Tue Mar 17 2015 Marco Lebbink <marco@lebbink.net> 2.0.5 
+* Tue Mar 17 2015 Marco Lebbink <marco@lebbink.net> 2.0.5
 * Thu Sep 18 2014 Derek Douville <derekd@nodeprime.com> Remove golang, etcd is statically linked
 * Wed Sep 17 2014 Derek Douville <derekd@nodeprime.com> 0.4.6
 * Mon Feb 10 2014 Nathan Milford <nathan@milford.io> 0.3.0

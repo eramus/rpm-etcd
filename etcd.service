@@ -1,0 +1,13 @@
+[Unit]
+Description=etcd
+
+[Service]
+User=etcd
+PermissionsStartOnly=true
+EnvironmentFile=/etc/sysconfig/etcd
+Environment=ETCD_DATA_DIR=/var/lib/etcd
+Environment=ETCD_NAME=%m
+ExecStart=/usr/sbin/etcd $ETCD_OPTS
+Restart=always
+RestartSec=10s
+LimitNOFILE=40000

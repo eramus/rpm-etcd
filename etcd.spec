@@ -105,6 +105,7 @@ fi
 %config(noreplace) %{_sysconfdir}/systemd/system/%{name}.service
 
 %changelog
+* Thu Mar 26 2015 Louis Zeun <louiszeun@louiszeun.com> systemd version
 * Tue Mar 17 2015 Marco Lebbink <marco@lebbink.net> 2.0.5
 * Thu Sep 18 2014 Derek Douville <derekd@nodeprime.com> Remove golang, etcd is statically linked
 * Wed Sep 17 2014 Derek Douville <derekd@nodeprime.com> 0.4.6
